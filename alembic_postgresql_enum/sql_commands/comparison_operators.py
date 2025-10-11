@@ -68,17 +68,14 @@ def _create_comparison_operator(
 
 def create_comparison_operators(
     connection: "Connection",
-    schema: str,
-    enum_name: str,
-    old_enum_name: str,
+    enum_type_name: str,
+    old_enum_type_name: str,
     enum_values_to_rename: List[Tuple[str, str]],
 ):
     for operator, comparison_function_name in OPERATORS_TO_CREATE:
-        new_enum_type_name = _get_escaped_enum_type_name(schema, enum_name)
-        old_enum_type_name = _get_escaped_enum_type_name(schema, old_enum_name)
         _create_comparison_operator(
             connection,
-            new_enum_type_name,
+            enum_type_name,
             old_enum_type_name,
             enum_values_to_rename,
             operator,
@@ -119,13 +116,10 @@ def _drop_comparison_operator(
 
 def drop_comparison_operators(
     connection: "Connection",
-    schema: str,
-    enum_name: str,
-    old_enum_name: str,
+    enum_type_name: str,
+    old_enum_type_name: str,
 ):
     for operator_symbol, comparison_function_name in OPERATORS_TO_CREATE:
-        new_enum_type_name = _get_escaped_enum_type_name(schema, enum_name)
-        old_enum_type_name = _get_escaped_enum_type_name(schema, old_enum_name)
         _drop_comparison_operator(
-            connection, new_enum_type_name, old_enum_type_name, comparison_function_name, operator_symbol
+            connection, enum_type_name, old_enum_type_name, comparison_function_name, operator_symbol
         )
