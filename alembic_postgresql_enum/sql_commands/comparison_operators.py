@@ -104,7 +104,7 @@ def _drop_comparison_operator(
             """
         )
     )
-    
+
     # Then drop the function
     connection.execute(
         sqlalchemy.text(
@@ -127,9 +127,5 @@ def drop_comparison_operators(
         new_enum_type_name = _get_escaped_enum_type_name(schema, enum_name)
         old_enum_type_name = _get_escaped_enum_type_name(schema, old_enum_name)
         _drop_comparison_operator(
-            connection, 
-            new_enum_type_name, 
-            old_enum_type_name, 
-            comparison_function_name,
-            operator_symbol
+            connection, new_enum_type_name, old_enum_type_name, comparison_function_name, operator_symbol
         )

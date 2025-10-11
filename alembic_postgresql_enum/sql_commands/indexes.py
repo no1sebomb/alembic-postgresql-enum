@@ -9,9 +9,10 @@ if TYPE_CHECKING:
 
 class TableIndex(NamedTuple):
     """Represents an index that needs to be recreated."""
+
     name: str
     definition: str
-    
+
     def __repr__(self):
         return f"TableIndex(name={self.name!r}, definition={self.definition!r})"
 
@@ -34,14 +35,14 @@ def get_dependent_indexes(
             WHERE n.nspname = :schema AND t.typname = :name
             """
         ),
-        {"schema": enum_schema, "name": enum_name}
+        {"schema": enum_schema, "name": enum_name},
     ).fetchone()
-    
+
     if not enum_oid_result:
         return []
-    
+
     enum_oid = enum_oid_result.oid
-    
+
     # Find all indexes that depend on this enum type
     # This includes indexes on columns of this enum type and partial indexes referencing it
     result = connection.execute(
@@ -88,13 +89,13 @@ def get_dependent_indexes(
                 )
             """
         ),
-        {"enum_oid": enum_oid, "enum_name": enum_name}
+        {"enum_oid": enum_oid, "enum_name": enum_name},
     )
-    
+
     indexes = []
     for row in result:
         indexes.append(TableIndex(name=row.index_name, definition=row.index_def))
-    
+
     return indexes
 
 
@@ -105,18 +106,14 @@ def drop_indexes(connection: "Connection", indexes: List[TableIndex]):
     for index in indexes:
         index_name = index.name
         # Extract schema and index name if qualified
-        if '.' in index_name:
-            schema_name, idx_name = index_name.rsplit('.', 1)
+        if "." in index_name:
+            schema_name, idx_name = index_name.rsplit(".", 1)
             schema_name = schema_name.strip('"')
             idx_name = idx_name.strip('"')
-            connection.execute(
-                sqlalchemy.text(f'DROP INDEX IF EXISTS "{schema_name}"."{idx_name}"')
-            )
+            connection.execute(sqlalchemy.text(f'DROP INDEX IF EXISTS "{schema_name}"."{idx_name}"'))
         else:
             idx_name = index_name.strip('"')
-            connection.execute(
-                sqlalchemy.text(f'DROP INDEX IF EXISTS "{idx_name}"')
-            )
+            connection.execute(sqlalchemy.text(f'DROP INDEX IF EXISTS "{idx_name}"'))
 
 
 def recreate_indexes(connection: "Connection", indexes: List[TableIndex]):
@@ -127,12 +124,8 @@ def recreate_indexes(connection: "Connection", indexes: List[TableIndex]):
         connection.execute(sqlalchemy.text(index.definition))
 
 
-
 def transform_indexes_for_renamed_values(
-    indexes: List[TableIndex],
-    enum_name: str,
-    enum_values_to_rename: List[Tuple[str, str]],
-    enum_schema: str
+    indexes: List[TableIndex], enum_name: str, enum_values_to_rename: List[Tuple[str, str]], enum_schema: str
 ) -> List[TableIndex]:
     """
     Transform all indexes to use renamed enum values.
@@ -140,45 +133,38 @@ def transform_indexes_for_renamed_values(
     """
     if not enum_values_to_rename:
         return indexes
-    
+
     transformed_indexes = []
     for index in indexes:
         transformed_def = transform_index_definition_for_renamed_values(
-            index.definition,
-            enum_name,
-            enum_values_to_rename,
-            enum_schema
+            index.definition, enum_name, enum_values_to_rename, enum_schema
         )
         transformed_indexes.append(TableIndex(name=index.name, definition=transformed_def))
-    
+
     return transformed_indexes
 
 
 def transform_index_definition_for_renamed_values(
-    index_definition: str,
-    enum_name: str,
-    enum_values_to_rename: List[Tuple[str, str]],
-    enum_schema: str
+    index_definition: str, enum_name: str, enum_values_to_rename: List[Tuple[str, str]], enum_schema: str
 ) -> str:
     """
     Transform an index definition to use renamed enum values.
-    
+
     For each (old_value, new_value) pair, replaces occurrences of:
     - 'old_value'::enum_name with 'new_value'::enum_name (unqualified)
     - 'old_value'::schema.enum_name with 'new_value'::schema.enum_name (schema-qualified)
     """
     transformed_def = index_definition
-    
+
     for old_value, new_value in enum_values_to_rename:
         old_pattern = f"'{old_value}'::{enum_name}"
         new_pattern = f"'{new_value}'::{enum_name}"
         transformed_def = transformed_def.replace(old_pattern, new_pattern)
-        
+
         # If schema provided, also replace any schema-qualified references
         if enum_schema:
             old_qualified = f"'{old_value}'::{enum_schema}.{enum_name}"
             new_qualified = f"'{new_value}'::{enum_schema}.{enum_name}"
             transformed_def = transformed_def.replace(old_qualified, new_qualified)
-    
-    return transformed_def
 
+    return transformed_def

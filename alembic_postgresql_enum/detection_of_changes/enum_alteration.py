@@ -57,7 +57,7 @@ def sync_changed_enums(
             list(new_values),
         )
         affected_columns = table_references[enum_name]
-        
+
         affected_indexes = get_dependent_indexes(connection, schema, enum_name)
 
         op = SyncEnumValuesOp(
