@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 from sqlalchemy.dialects import postgresql
 
 
-def default_migration_options(target_schema: Union[MetaData, List[MetaData]]) -> dict[str, Any]:
+def default_migration_options(target_schema: Union[MetaData, List[MetaData]]) -> Dict[str, Any]:
     return {
         "alembic_module_prefix": "op.",
         "sqlalchemy_module_prefix": "sa.",
