@@ -1,5 +1,5 @@
 import logging
-from typing import List, Tuple, Any, Iterable, TYPE_CHECKING
+from typing import List, Tuple, Any, Iterable, TYPE_CHECKING, Optional
 
 import alembic.autogenerate
 import alembic.operations.base
@@ -138,7 +138,7 @@ class SyncEnumValuesOp(alembic.operations.ops.MigrateOperation):
         new_values: List[str],
         affected_columns: List[Tuple[str, str]],
         enum_values_to_rename: Iterable[Tuple[str, str]] = tuple(),
-        indexes_to_recreate: List[TableIndex] | None = None,
+        indexes_to_recreate: Optional[List[TableIndex]] = None,
     ):
         """
         Replace enum values with `new_values`
