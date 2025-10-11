@@ -39,5 +39,5 @@ pytest
 
 Run formatter
 ```
-uv run black
+uv run black alembic_postgresql_enum/ tests/
 ```
