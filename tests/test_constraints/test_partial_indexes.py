@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import DataError
 
-from tests.schemas import USER_TABLE_NAME, DEFAULT_SCHEMA
+from tests.schemas import USER_TABLE_NAME, DEFAULT_SCHEMA, ANOTHER_SCHEMA_NAME
 from alembic_postgresql_enum.sql_commands.indexes import get_dependent_indexes
 
 
@@ -407,11 +407,10 @@ def test_fallback_detection_of_partial_indexes_with_enum_expressions(connection:
     assert no_indexes == [], "Should return empty list for non-existent enum"
 
     # Test with enum in different schema
-    connection.execute(sqlalchemy.text("CREATE SCHEMA IF NOT EXISTS other_schema"))
     connection.execute(
         sqlalchemy.text(
-            """
-            CREATE TYPE other_schema.task_priority AS ENUM ('p1', 'p2', 'p3')
+            f"""
+            CREATE TYPE {ANOTHER_SCHEMA_NAME}.task_priority AS ENUM ('p1', 'p2', 'p3')
             """
         )
     )
@@ -419,10 +418,10 @@ def test_fallback_detection_of_partial_indexes_with_enum_expressions(connection:
     # Create an index using the other schema's enum (with same name)
     connection.execute(
         sqlalchemy.text(
-            """
-            CREATE TABLE other_schema.tasks (
+            f"""
+            CREATE TABLE {ANOTHER_SCHEMA_NAME}.tasks (
                 id INTEGER PRIMARY KEY,
-                priority other_schema.task_priority
+                priority {ANOTHER_SCHEMA_NAME}.task_priority
             )
             """
         )
@@ -430,10 +429,10 @@ def test_fallback_detection_of_partial_indexes_with_enum_expressions(connection:
 
     connection.execute(
         sqlalchemy.text(
-            """
-            CREATE INDEX idx_other_schema_priority 
-            ON other_schema.tasks (id) 
-            WHERE priority = 'p1'::other_schema.task_priority
+            f"""
+            CREATE INDEX idx_{ANOTHER_SCHEMA_NAME}_priority 
+            ON {ANOTHER_SCHEMA_NAME}.tasks (id) 
+            WHERE priority = 'p1'::{ANOTHER_SCHEMA_NAME}.task_priority
             """
         )
     )
@@ -442,13 +441,15 @@ def test_fallback_detection_of_partial_indexes_with_enum_expressions(connection:
     public_indexes = get_dependent_indexes(connection, "public", "task_priority")
     public_index_names = {idx.name for idx in public_indexes}
     assert not any(
-        "idx_other_schema_priority" in name for name in public_index_names
+        f"idx_{ANOTHER_SCHEMA_NAME}_priority" in name for name in public_index_names
     ), "Should not find indexes from other schemas"
 
     # Verify that searching for other_schema.task_priority finds its index
-    other_indexes = get_dependent_indexes(connection, "other_schema", "task_priority")
+    other_indexes = get_dependent_indexes(connection, ANOTHER_SCHEMA_NAME, "task_priority")
     other_index_names = {idx.name for idx in other_indexes}
-    assert any("idx_other_schema_priority" in name for name in other_index_names), "Should find index in other_schema"
+    assert any(
+        f"idx_{ANOTHER_SCHEMA_NAME}_priority" in name for name in other_index_names
+    ), f"Should find index in {ANOTHER_SCHEMA_NAME}"
 
 
 def test_non_partial_indexes_not_explicitly_dropped(connection: "Connection"):
