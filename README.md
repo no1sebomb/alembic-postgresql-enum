@@ -30,6 +30,10 @@ import alembic_postgresql_enum
 
 To the top of your migrations/env.py file.
 
+This import will affect newly generated migrations. 
+To try it out you can edit some enums in your schema 
+and then run `alembic revision --autogenerate`
+
 ## Features
 
 * [Creation of enums](#creation-of-enum)
