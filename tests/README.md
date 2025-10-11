@@ -36,3 +36,8 @@ Run tests
 ```
 pytest
 ```
+
+Run formatter
+```
+uv run black
+```
