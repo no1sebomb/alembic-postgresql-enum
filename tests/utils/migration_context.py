@@ -26,7 +26,7 @@ def create_migration_context(
     connection: "Connection",
     target_schema: Union[MetaData, List[MetaData]],
     *,
-    migration_options_overrides: Dict[str, Any] = {}
+    migration_options_overrides: Dict[str, Any] = {},
 ) -> MigrationContext:
     """Create a migration context using the provided schema and optional configuration overrides."""
     migration_options = default_migration_options(target_schema)
