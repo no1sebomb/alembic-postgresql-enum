@@ -399,11 +399,15 @@ alembic_postgresql_enum.set_configuration(
 Available options:
 
 - `add_type_ignore` (`False` by default) - flag that can be turned on 
-to add `# type: ignore[attr-defined]` at the end of generated `op.sync_enum_values` calls.
-This is helpful if you are using type checker such as `mypy`.
-`type: ignore` is needed because there is no way to add new function to an existing alembic's `op`.
+to add a type ignore comment at the end of generated `op.sync_enum_values` calls.
+This is helpful if you are using type checker such as `mypy`.  
+They need it because there is no way to add new function to an existing alembic's `op`.
 
-- `include_name` (`lambda _: True` bby default) - it adds ability to ignore process enum by name in similar way alembic allows to define `include_name` function. 
+- `type_ignore_comment` (`"  # type: ignore[attr-defined]"` by default) - the
+comment added when using `add_type_ignore`. This can be configured for the
+particular type checker used.
+
+- `include_name` (`lambda _: True` by default) - it adds ability to ignore process enum by name in similar way alembic allows to define `include_name` function. 
 This property accepts function that takes enum name and returns whether it should be processed.  
 
 - `drop_unused_enums` (`True` by default) - feature flag that can be turned off to disable clean up of undeclared enums

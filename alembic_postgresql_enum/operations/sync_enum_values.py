@@ -246,7 +246,7 @@ def render_sync_enum_value_op(autogen_context: AutogenContext, op: SyncEnumValue
         autogen_context.imports.add("from alembic_postgresql_enum.sql_commands.indexes import TableIndex")
 
     lines = [
-        f"{alembic_module_prefix}sync_enum_values({'  # type: ignore[attr-defined]' if config.add_type_ignore else ''}",
+        f"{alembic_module_prefix}sync_enum_values({config.type_ignore_comment if config.add_type_ignore else ''}",
         f"    enum_schema={op.schema!r},",
         f"    enum_name={op.name!r},",
         f"    new_values={op.new_values!r},",
