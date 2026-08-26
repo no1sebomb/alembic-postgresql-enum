@@ -73,14 +73,16 @@ def test_sync_enum_values_in_non_public_schema(connection: "Connection"):
     """Comparison functions and operators should be created in the enum's schema,
     not in the public schema. This matters when the migration user lacks CREATE
     privileges on the public schema."""
-    connection.execute(sqlalchemy.text(
-        f'CREATE TYPE "{ANOTHER_SCHEMA_NAME}"."task_status" AS ENUM (\'pending\', \'running\', \'done\')'
-    ))
-    connection.execute(sqlalchemy.text(
-        f'CREATE TABLE "{ANOTHER_SCHEMA_NAME}"."tasks" ('
-        f'id serial PRIMARY KEY, '
-        f'status "{ANOTHER_SCHEMA_NAME}"."task_status" NOT NULL)'
-    ))
+    connection.execute(
+        sqlalchemy.text(f"CREATE TYPE \"{ANOTHER_SCHEMA_NAME}\".\"task_status\" AS ENUM ('pending', 'running', 'done')")
+    )
+    connection.execute(
+        sqlalchemy.text(
+            f'CREATE TABLE "{ANOTHER_SCHEMA_NAME}"."tasks" ('
+            f"id serial PRIMARY KEY, "
+            f'status "{ANOTHER_SCHEMA_NAME}"."task_status" NOT NULL)'
+        )
+    )
 
     mc = MigrationContext.configure(connection)
     ops = Operations(mc)
@@ -105,17 +107,19 @@ def test_sync_enum_values_in_non_public_schema(connection: "Connection"):
 def test_sync_enum_values_with_rename_in_non_public_schema(connection: "Connection"):
     """Comparison functions and operators for renames should also be created
     in the enum's schema."""
-    connection.execute(sqlalchemy.text(
-        f'CREATE TYPE "{ANOTHER_SCHEMA_NAME}"."color" AS ENUM (\'red\', \'green\', \'blue\')'
-    ))
-    connection.execute(sqlalchemy.text(
-        f'CREATE TABLE "{ANOTHER_SCHEMA_NAME}"."items" ('
-        f'id serial PRIMARY KEY, '
-        f'color "{ANOTHER_SCHEMA_NAME}"."color" NOT NULL)'
-    ))
-    connection.execute(sqlalchemy.text(
-        f'INSERT INTO "{ANOTHER_SCHEMA_NAME}"."items" (color) VALUES (\'red\'), (\'green\')'
-    ))
+    connection.execute(
+        sqlalchemy.text(f"CREATE TYPE \"{ANOTHER_SCHEMA_NAME}\".\"color\" AS ENUM ('red', 'green', 'blue')")
+    )
+    connection.execute(
+        sqlalchemy.text(
+            f'CREATE TABLE "{ANOTHER_SCHEMA_NAME}"."items" ('
+            f"id serial PRIMARY KEY, "
+            f'color "{ANOTHER_SCHEMA_NAME}"."color" NOT NULL)'
+        )
+    )
+    connection.execute(
+        sqlalchemy.text(f"INSERT INTO \"{ANOTHER_SCHEMA_NAME}\".\"items\" (color) VALUES ('red'), ('green')")
+    )
 
     mc = MigrationContext.configure(connection)
     ops = Operations(mc)
@@ -137,9 +141,11 @@ def test_sync_enum_values_with_rename_in_non_public_schema(connection: "Connecti
     defined = get_defined_enums(connection, ANOTHER_SCHEMA_NAME)
     assert defined == {"color": ("red", "lime", "blue")}
 
-    rows = connection.execute(sqlalchemy.text(
-        f'SELECT color FROM "{ANOTHER_SCHEMA_NAME}"."items" ORDER BY id'
-    )).scalars().all()
+    rows = (
+        connection.execute(sqlalchemy.text(f'SELECT color FROM "{ANOTHER_SCHEMA_NAME}"."items" ORDER BY id'))
+        .scalars()
+        .all()
+    )
     assert rows == ["red", "lime"]
 
 
@@ -152,49 +158,32 @@ def test_sync_enum_values_without_public_create_privilege(connection: "Connectio
     schema-qualification this test fails with 'permission denied for schema public'."""
     # Create a restricted role that owns the 'another' schema but cannot create in public.
     # Use SET LOCAL ROLE to assume its identity within this transaction.
-    connection.execute(sqlalchemy.text(
-        f"DROP ROLE IF EXISTS {RESTRICTED_USER}"
-    ))
-    connection.execute(sqlalchemy.text(
-        f"CREATE ROLE {RESTRICTED_USER} NOLOGIN"
-    ))
-    connection.execute(sqlalchemy.text(
-        f'ALTER SCHEMA "{ANOTHER_SCHEMA_NAME}" OWNER TO {RESTRICTED_USER}'
-    ))
-    connection.execute(sqlalchemy.text(
-        f"REVOKE CREATE ON SCHEMA public FROM {RESTRICTED_USER}"
-    ))
+    connection.execute(sqlalchemy.text(f"DROP ROLE IF EXISTS {RESTRICTED_USER}"))
+    connection.execute(sqlalchemy.text(f"CREATE ROLE {RESTRICTED_USER} NOLOGIN"))
+    connection.execute(sqlalchemy.text(f'ALTER SCHEMA "{ANOTHER_SCHEMA_NAME}" OWNER TO {RESTRICTED_USER}'))
+    connection.execute(sqlalchemy.text(f"REVOKE CREATE ON SCHEMA public FROM {RESTRICTED_USER}"))
     # Create enum and table owned by the restricted user
-    connection.execute(sqlalchemy.text(
-        f'CREATE TYPE "{ANOTHER_SCHEMA_NAME}"."priority" '
-        f"AS ENUM ('low', 'medium', 'high')"
-    ))
-    connection.execute(sqlalchemy.text(
-        f'ALTER TYPE "{ANOTHER_SCHEMA_NAME}"."priority" '
-        f"OWNER TO {RESTRICTED_USER}"
-    ))
-    connection.execute(sqlalchemy.text(
-        f'CREATE TABLE "{ANOTHER_SCHEMA_NAME}"."tickets" ('
-        f'id serial PRIMARY KEY, '
-        f'priority "{ANOTHER_SCHEMA_NAME}"."priority" NOT NULL)'
-    ))
-    connection.execute(sqlalchemy.text(
-        f'ALTER TABLE "{ANOTHER_SCHEMA_NAME}"."tickets" '
-        f"OWNER TO {RESTRICTED_USER}"
-    ))
-    connection.execute(sqlalchemy.text(
-        f'ALTER SEQUENCE "{ANOTHER_SCHEMA_NAME}"."tickets_id_seq" '
-        f"OWNER TO {RESTRICTED_USER}"
-    ))
-    connection.execute(sqlalchemy.text(
-        f'INSERT INTO "{ANOTHER_SCHEMA_NAME}"."tickets" (priority) '
-        f"VALUES ('low'), ('high')"
-    ))
+    connection.execute(
+        sqlalchemy.text(f'CREATE TYPE "{ANOTHER_SCHEMA_NAME}"."priority" ' f"AS ENUM ('low', 'medium', 'high')")
+    )
+    connection.execute(sqlalchemy.text(f'ALTER TYPE "{ANOTHER_SCHEMA_NAME}"."priority" ' f"OWNER TO {RESTRICTED_USER}"))
+    connection.execute(
+        sqlalchemy.text(
+            f'CREATE TABLE "{ANOTHER_SCHEMA_NAME}"."tickets" ('
+            f"id serial PRIMARY KEY, "
+            f'priority "{ANOTHER_SCHEMA_NAME}"."priority" NOT NULL)'
+        )
+    )
+    connection.execute(sqlalchemy.text(f'ALTER TABLE "{ANOTHER_SCHEMA_NAME}"."tickets" ' f"OWNER TO {RESTRICTED_USER}"))
+    connection.execute(
+        sqlalchemy.text(f'ALTER SEQUENCE "{ANOTHER_SCHEMA_NAME}"."tickets_id_seq" ' f"OWNER TO {RESTRICTED_USER}")
+    )
+    connection.execute(
+        sqlalchemy.text(f'INSERT INTO "{ANOTHER_SCHEMA_NAME}"."tickets" (priority) ' f"VALUES ('low'), ('high')")
+    )
 
     # Switch to the restricted role — permission checks now apply
-    connection.execute(sqlalchemy.text(
-        f"SET LOCAL ROLE {RESTRICTED_USER}"
-    ))
+    connection.execute(sqlalchemy.text(f"SET LOCAL ROLE {RESTRICTED_USER}"))
 
     mc = MigrationContext.configure(connection)
     ops = Operations(mc)
@@ -215,9 +204,11 @@ def test_sync_enum_values_without_public_create_privilege(connection: "Connectio
     defined = get_defined_enums(connection, ANOTHER_SCHEMA_NAME)
     assert defined == {"priority": ("low", "medium", "high", "critical")}
 
-    rows = connection.execute(sqlalchemy.text(
-        f'SELECT priority FROM "{ANOTHER_SCHEMA_NAME}"."tickets" ORDER BY id'
-    )).scalars().all()
+    rows = (
+        connection.execute(sqlalchemy.text(f'SELECT priority FROM "{ANOTHER_SCHEMA_NAME}"."tickets" ORDER BY id'))
+        .scalars()
+        .all()
+    )
     assert rows == ["low", "high"]
 
     # Restore original role
