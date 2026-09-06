@@ -14,7 +14,12 @@ from alembic_postgresql_enum.detection_of_changes import (
     create_new_enums,
     drop_unused_enums,
 )
+from alembic_postgresql_enum.enum_variables import (
+    enum_variables,
+    use_enum_variables_while_rendering,
+)
 from alembic_postgresql_enum.get_enum_data import get_defined_enums, get_declared_enums
+from alembic_postgresql_enum.operations.enum_lifecycle_base import EnumLifecycleOp
 from alembic_postgresql_enum.configuration import get_configuration
 
 log = logging.getLogger(f"alembic.{__name__}")
@@ -45,6 +50,9 @@ def compare_enums(
             f"This library only supports postgresql, but you are using {autogen_context.dialect.name}, skipping"
         )
         return
+
+    # variables of previously generated migration must not leak into current one
+    enum_variables.reset(autogen_context.dialect.default_schema_name)
 
     add_create_type_false(upgrade_ops)
     add_postgres_using_to_text(upgrade_ops)
@@ -87,6 +95,18 @@ def compare_enums(
                 upgrade_ops,
                 connection=autogen_context.connection,
             )
+
+    if configuration.module_level_enums:
+        define_enums_at_module_level(upgrade_ops)
+        use_enum_variables_while_rendering(autogen_context)
+        enum_variables.place_definitions(autogen_context.migration_context)
+
+
+def define_enums_at_module_level(upgrade_ops: UpgradeOps):
+    """Reserve module level variable for every enum that is created or dropped inside migration"""
+    for operation in upgrade_ops.ops:
+        if isinstance(operation, EnumLifecycleOp):
+            enum_variables.register(operation.schema, operation.name, operation.enum_values)
 
 
 if tuple((int(s) for s in alembic.__version__.split("."))) < (1, 18, 0):

@@ -12,6 +12,8 @@ from alembic.operations.ops import (
 from sqlalchemy import Column
 from sqlalchemy.dialects import postgresql
 
+from alembic_postgresql_enum.enum_variables import enum_variables
+
 
 class ReprWorkaround(postgresql.ENUM):
     """
@@ -21,6 +23,11 @@ class ReprWorkaround(postgresql.ENUM):
     __module__ = "sqlalchemy.dialects.postgresql"
 
     def __repr__(self):
+        variable_name = enum_variables.get(self.schema, self.name)
+        if variable_name is not None:
+            # enum is defined as module level variable, so it is referenced by its name
+            return variable_name
+
         return f"{super().__repr__()[:-1]}, create_type=False)".replace("ReprWorkaround", "ENUM").replace(
             ", metadata=MetaData()", ""
         )

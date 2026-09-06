@@ -49,23 +49,14 @@ def compare_and_run(
     if disable_running:
         return
 
-    exec(
-        upgrade_code,
-        {  # todo Use imports from template_args
-            "op": op,
-            "sa": sqlalchemy,
-            "postgresql": postgresql,
-            "ColumnType": ColumnType,
-            "TableReference": TableReference,
-        },
-    )
-    exec(
-        downgrade_code,
-        {
-            "op": op,
-            "sa": sqlalchemy,
-            "postgresql": postgresql,
-            "ColumnType": ColumnType,
-            "TableReference": TableReference,
-        },
-    )
+    # migration file is executed as a module, so module level code is shared by upgrade and downgrade
+    migration_namespace: Dict[str, Any] = {
+        "op": op,
+        "sa": sqlalchemy,
+        "postgresql": postgresql,
+        "ColumnType": ColumnType,
+        "TableReference": TableReference,
+    }
+    exec(template_args["imports"], migration_namespace)
+    exec(upgrade_code, migration_namespace)
+    exec(downgrade_code, migration_namespace)
